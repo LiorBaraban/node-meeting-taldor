@@ -1,9 +1,10 @@
 // File System Module - fs
 // =======================
 
-const fs = require('fs');
 const express = require('express');
 const app = express();
+const fs = require('fs');
+const notificationService = require('./notification-service')
 
 app.get('/', (req, res) => {
     res.send({
@@ -43,10 +44,20 @@ app.get('/employeeStatusReport/:empId', (req, res) => {
     readStream.pipe(res);
     
     readStream.on('open',()=>{
-        console.log('file is open');
+        notificationService.emit('notify','the file is open');
     })
 
-    // Backup The File
+    readStream.on('data',()=>{
+        notificationService.emit('notify','data chunk is read!');
+    })
+
+    readStream.on('close',()=>{
+        notificationService.emit('notify','the file is closed');
+    })
+
+
+    
+    // Pipe to writable stream - backup The File
     // if(!fs.existsSync('./Backup')){
     //     fs.mkdirSync('./Backup');
     // }
