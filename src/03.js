@@ -4,7 +4,10 @@
 const express = require('express');
 const app = express();
 const fs = require('fs');
-const notificationService = require('./notification-service')
+const notificationService = require('./services/notification-service');
+require('./services/email-service');
+require('./services/sms-service');
+
 
 app.get('/', (req, res) => {
     res.send({
@@ -13,8 +16,9 @@ app.get('/', (req, res) => {
 });
 
 app.get('/employees', (req, res) => {
-    const employeeLogic = require('./employee-logic');
+    const employeeLogic = require('./business-logics/employee-logic');
     const employees = employeeLogic.getAllEmployees();
+    notificationService.emit('notify','somone got all employees');
 
     res.status(200).send(employees);
 })
