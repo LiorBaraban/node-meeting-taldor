@@ -1,7 +1,6 @@
 class EmployeeLogic {
 
     constructor(){
-        this.test = "test0";
     }
     
     getAllEmployees(){
