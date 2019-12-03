@@ -1,12 +1,15 @@
-// File System Module - fs
+// A more complex example
+// Express
+// File System Module 
+// Event Emitter Module
 // =======================
 
 const express = require('express');
 const app = express();
 const fs = require('fs');
-const notificationService = require('./services/notification-service');
-require('./services/email-service');
-require('./services/sms-service');
+const notificationService = require('./services/_notification-service');
+require('./services/email-handler');
+require('./services/sms-handler');
 
 
 app.get('/', (req, res) => {
@@ -18,57 +21,57 @@ app.get('/', (req, res) => {
 app.get('/employees', (req, res) => {
     const employeeLogic = require('./business-logics/employee-logic');
     const employees = employeeLogic.getAllEmployees();
-    notificationService.emit('notify','somone got all employees');
+    notificationService.emit('notify', 'somone got all employees');
 
     res.status(200).send(employees);
 })
 
-app.use('/employeeStatusReport/:empId', (req, res, next) => {
-    console.log(`rqeuested employee status report on ${req.params.empId}`);
+app.use('/employeeCard/:empId', (req, res, next) => {
+    notificationService.emit('notify', `rqeuested employee status report on ${req.params.empId}`);
     next();
 })
 
-app.get('/employeeStatusReport/:empId', (req, res) => {
+app.get('/employeeCard/:empId', (req, res) => {
+
+    const employeeId = req.params.empId;
+    const employeeLogic = require('./business-logics/employee-logic');
+    const employee = employeeLogic.getEmployee(employeeId);
 
     console.log('send an IO command to OS and set a callback to be called by the event loop once finished');
 
-    // fs.readFile('./file-to-stream.txt', (err, data) => {
-    //     if (err) {
-    //         res.stat(500).send(err);
-    //     }
 
-    //     console.log('IO finished, event loop is now running the callback');
-    //     res.status(200)
-    //         .attachment('file.txt')
-    //         .send(data);
-    // });
+    if (!fs.existsSync('./Files')) {
+        fs.mkdirSync('./Files');
+    }
 
+    const filePath = `./Files/${employeeId}`;
+
+    const fileContent = `This is ${employee.name}'s Employee Card`;
+
+    // #region Sync File Reading
+    // fs.writeFileSync(filePath, fileContent)
+    // const fileData = fs.readFileSync(filePath);
+    // res.status(200).attachment('employeeReport.txt').send(fileContent);
+    // console.log('finished GET employeeCard');
+    // #endregion
     
-    const readStream = fs.createReadStream('./file-to-stream.txt');
-    readStream.pipe(res);
-    
-    readStream.on('open',()=>{
-        notificationService.emit('notify','the file is open');
-    })
+    // #region Async File Reading
 
-    readStream.on('data',()=>{
-        notificationService.emit('notify','data chunk is read!');
-    })
+    fs.writeFile(filePath, fileContent, () => {
+        console.log('file written')
+        fs.readFile(filePath, (err, data) => {
+            console.log('file is read');
+            if (err) {
+                res.stat(500).send(err);
+            }
+            res.status(200)
+                .attachment('employeeReport.txt')
+                .send(data);
+        });
+    });
 
-    readStream.on('close',()=>{
-        notificationService.emit('notify','the file is closed');
-    })
+    // #endregion
 
-
-    
-    // Pipe to writable stream - backup The File
-    // if(!fs.existsSync('./Backup')){
-    //     fs.mkdirSync('./Backup');
-    // }
-    // readStream.pipe(fs.createWriteStream('./Backup/file-to-stream-backup.txt'));
-
-
-    res.status(200).attachment('file.txt')
 })
 
 app.listen(3000, () => {

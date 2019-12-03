@@ -1,12 +1,46 @@
 class EmployeeLogic {
 
-    constructor(){
+    constructor() {
     }
-    
-    getAllEmployees(){
-        return {
-            employees: ["Ofer","Lior", "Hen", "Roy", "Tzipora","Liad","Sagi"]
-        }
+
+    getAllEmployees() {
+        return [
+            {
+                id: 1,
+                name: "Ofer",
+            },
+            {
+                id: 2,
+                name: "Lior",
+            },
+            {
+                id: 3,
+                name: "Hen",
+            },
+            {
+                id: 4,
+                name: "Tzipora",
+            },
+            {
+                id: 5,
+                name: "Liad",
+            },
+            {
+                id: 6,
+                name: "Sagi",
+            },
+            {
+                id: 7,
+                name: "Olga"
+            }
+        ]
+    }
+
+    getEmployee(id) {
+        console.log('id',id);
+        const employee = this.getAllEmployees().find(x => x.id == id);
+        console.dir(employee);
+        return employee;
     }
 }
 

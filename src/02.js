@@ -12,7 +12,7 @@ app.get('/', (req,res)=>{
 });
 
 app.get('/employees',(req,res)=>{
-    const employeeLogic = require('./employee-logic');
+    const employeeLogic = require('./business-logics/employee-logic');
     const employees = employeeLogic.getAllEmployees();
 
     res.status(200).send(employees);
