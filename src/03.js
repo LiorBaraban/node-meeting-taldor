@@ -40,11 +40,11 @@ app.get('/employeeCard/:empId', (req, res) => {
     console.log('send an IO command to OS and set a callback to be called by the event loop once finished');
 
 
-    if (!fs.existsSync('./Files')) {
-        fs.mkdirSync('./Files');
+    if (!fs.existsSync('./files')) {
+        fs.mkdirSync('./files');
     }
 
-    const filePath = `./Files/${employeeId}`;
+    const filePath = `./files/${employeeId}`;
 
     const fileContent = `This is ${employee.name}'s Employee Card`;
 
