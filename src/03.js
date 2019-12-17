@@ -1,79 +1,24 @@
-// A more complex example
-// Express
-// File System Module 
-// Event Emitter Module
-// =======================
+// Cluster Mode
+// =============
 
-const express = require('express');
-const app = express();
-const fs = require('fs');
-const notificationService = require('./services/_notification-service');
-require('./services/email-handler');
-require('./services/sms-handler');
+const cluster = require('cluster');
 
-
-app.get('/', (req, res) => {
-    res.send({
-        message: 'express server works!'
-    });
-});
-
-app.get('/employees', (req, res) => {
-    const employeeLogic = require('./business-logics/employee-logic');
-    const employees = employeeLogic.getAllEmployees();
-    notificationService.emit('notify', 'somone got all employees');
-
-    res.status(200).send(employees);
-})
-
-app.use('/employeeCard/:empId', (req, res, next) => {
-    notificationService.emit('notify', `rqeuested employee status report on ${req.params.empId}`);
-    next();
-})
-
-app.get('/employeeCard/:empId', (req, res) => {
-
-    const employeeId = req.params.empId;
-    const employeeLogic = require('./business-logics/employee-logic');
-    const employee = employeeLogic.getEmployee(employeeId);
-
-    console.log('send an IO command to OS and set a callback to be called by the event loop once finished');
-
-
-    if (!fs.existsSync('./files')) {
-        fs.mkdirSync('./files');
+if (cluster.isMaster){
+    // create workers
+    console.log(`pid ${process.pid} : started master`);
+    const clusterSize = 4;
+    console.log(`cluster size is ${clusterSize}`);
+    
+    for(var i = 0; i < clusterSize; i++) {
+        cluster.fork();
     }
 
-    const filePath = `./files/${employeeId}`;
-
-    const fileContent = `This is ${employee.name}'s Employee Card`;
-
-    // #region Sync File Reading
-    // fs.writeFileSync(filePath, fileContent)
-    // const fileData = fs.readFileSync(filePath);
-    // res.status(200).attachment('employeeReport.txt').send(fileContent);
-    // console.log('finished GET employeeCard');
-    // #endregion
-    
-    // #region Async File Reading
-
-    fs.writeFile(filePath, fileContent, () => {
-        console.log('file written')
-        fs.readFile(filePath, (err, data) => {
-            console.log('file is read');
-            if (err) {
-                res.stat(500).send(err);
-            }
-            res.status(200)
-                .attachment('employeeReport.txt')
-                .send(data);
-        });
+    cluster.on('online', function(worker) {
+        console.log('Worker ' + worker.process.pid + ' is online');
     });
 
-    // #endregion
-
-})
-
-app.listen(3000, () => {
-    console.log('server is listening');
-});
+} else { // a worker is created:
+    console.log(`pid ${process.pid} : started worker`);
+    // create 'Employees' Server from 02.js
+    require('./02.js');
+}

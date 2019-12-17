@@ -1,52 +1,88 @@
-// Simple Video Streaming Server
-// Express, FS, 
+// A more complex example
+// Express
+// File System Module 
+// Event Emitter Module
+// =======================
 
 const express = require('express');
 const app = express();
 const fs = require('fs');
-app.get('/video', (req, res) => {
-    const filePath = './assets/sample-video.mp4';
-    const stat = fs.statSync(filePath);
-    const fileSize = stat.size;
-    const range = req.headers.range;
+const notificationService = require('./services/_notification-service');
+require('./services/email-handler');
+require('./services/sms-handler');
 
-    if (!!range){
-        console.log('streaming request');
-        const [startString, endString] = range.replace(/bytes=/,'').split('=');
 
-        const start = parseInt(startString,10);
-        const end = endString ? parseInt(endString,10) : fileSize-1;
-        const chunkSize = (end-start)+1;
+app.get('/', (req, res) => {
+    res.send({
+        message: 'express server works!'
+    });
+});
 
-        const head = {
-            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': chunkSize,
-            'Content-Type': 'video/mp4',
-        }
+app.get('/employees', (req, res) => {
+    const employeeLogic = require('./business-logics/employee-logic');
+    const employees = employeeLogic.getAllEmployees();
+    notificationService.emit('notify', 'somone got all employees');
 
-        res.writeHead(206, head);
-        fs.createReadStream(filePath, {start, end}).pipe(res);
+    res.status(200).send(employees);
+})
 
-    } else{
-        console.log('initial request');
-        const head = {
-            'Content-Length': fileSize,
-            'Content-Type': 'video/mp4',
-        }
-        res.writeHead(206, head)
-        fs.createReadStream(path).pipe(res);
+app.use('/employeeCard/:empId', (req, res, next) => {
+    notificationService.emit('notify', `rqeuested employee status report on ${req.params.empId}`);
+    next();
+})
+
+app.get('/employeeCard/:empId', (req, res) => {
+
+    const employeeId = req.params.empId;
+    const employeeLogic = require('./business-logics/employee-logic');
+    const employee = employeeLogic.getEmployee(employeeId);
+
+    console.log('send an IO command to OS and set a callback to be called by the event loop once finished');
+
+
+    if (!fs.existsSync('./files')) {
+        fs.mkdirSync('./files');
     }
+
+    const filePath = `./files/${employeeId}`;
+
+    const fileContent = `This is ${employee.name}'s Employee Card`;
+
+    // #region Sync File Reading
+    // fs.writeFileSync(filePath, fileContent)
+    // const fileData = fs.readFileSync(filePath);
+    // res.status(200).attachment('employeeReport.txt').send(fileContent);
+    // console.log('finished GET employeeCard');
+    // #endregion
+    
+    // #region Async File Reading
+    // fs.writeFile(filePath, fileContent, () => {
+    //     // console.log('file written')
+    //     fs.readFile(filePath, (err, data) => {
+    //         // console.log('file is read');
+    //         if (err) {
+    //             res.stat(500).send(err);
+    //         }
+    //         res.status(200)
+    //             .attachment('employeeReport.txt')
+    //             .send(data);
+    //     });
+    // });
+
+    // #endregion
+    if (!fs.exists(filePath)){
+        fs.writeFileSync(filePath, fileContent);
+    } 
+
+    res.writeHead(200);
+    
+    const ws = fs.createWriteStream(filePath);
+    const rs = fs.createReadStream(filePath);
+    const rsws = rs.pipe(ws);
+    rsws.write(` ${Date.now()}\n`);
+    rs.pipe(res);
 })
 
-app.listen(3000,() => {
+app.listen(3000, () => {
     console.log('server is listening');
-})
-
-
-
-// In the html:
-// ===============
-// <video id="videoPlayer" controls>
-//   <source src="http://localhost:3000/video" type="video/mp4">
-// </video>
+});
