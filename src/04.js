@@ -7,6 +7,9 @@
 const express = require('express');
 const app = express();
 const fs = require('fs');
+var zlib = require('zlib');
+const { Transform } = require('stream');
+
 const notificationService = require('./services/_notification-service');
 require('./services/email-handler');
 require('./services/sms-handler');
@@ -44,7 +47,7 @@ app.get('/employeeCard/:empId', (req, res) => {
         fs.mkdirSync('./files');
     }
 
-    const filePath = `./files/${employeeId}`;
+    const filePath = `./files/${employeeId}.txt`;
 
     const fileContent = `This is ${employee.name}'s Employee Card`;
 
@@ -54,7 +57,7 @@ app.get('/employeeCard/:empId', (req, res) => {
     // res.status(200).attachment('employeeReport.txt').send(fileContent);
     // console.log('finished GET employeeCard');
     // #endregion
-    
+
     // #region Async File Reading
     // fs.writeFile(filePath, fileContent, () => {
     //     // console.log('file written')
@@ -70,17 +73,19 @@ app.get('/employeeCard/:empId', (req, res) => {
     // });
 
     // #endregion
-    if (!fs.exists(filePath)){
-        fs.writeFileSync(filePath, fileContent);
-    } 
-
-    res.writeHead(200);
     
-    const ws = fs.createWriteStream(filePath);
+    
+    // #region Piping - A More Complex Example
+    if (!fs.exists(filePath)) {
+        fs.writeFileSync(filePath, fileContent);
+    }
+
+
     const rs = fs.createReadStream(filePath);
-    const rsws = rs.pipe(ws);
-    rsws.write(` ${Date.now()}\n`);
-    rs.pipe(res);
+    const gzip = zlib.createGzip();
+    res.setHeader("Content-Disposition", `attachment; filename=${employeeId}.txt.gz`);
+    rs.pipe(gzip).pipe(res);
+    // #endregion
 })
 
 app.listen(3000, () => {
